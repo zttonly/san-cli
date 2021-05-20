@@ -1,4 +1,5 @@
 [
+    'asset',
     'file',
     'url',
     'css',

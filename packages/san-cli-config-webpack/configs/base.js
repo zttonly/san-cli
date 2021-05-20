@@ -116,11 +116,11 @@ module.exports = (webpackChainConfig, projectOptions) => {
         }
     });
 
-    // 使用url-loader 设置 img, media, fonts + svg-url设置svg
+    // 使用Asset Modules 设置 img, media, fonts + svg-url设置svg
     [
-        ['fonts', /\.(woff2?|eot|ttf|otf)(\?.*)?$/i, 'url'],
-        ['media', /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/, 'url'],
-        ['image', /\.(png|jpe?g|gif|webp)(\?.*)?$/, 'url'],
+        ['fonts', /\.(woff2?|eot|ttf|otf)(\?.*)?$/i, 'asset'],
+        ['media', /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/, 'asset'],
+        ['image', /\.(png|jpe?g|gif|webp)(\?.*)?$/, 'asset'],
         ['svg', /\.svg(\?.*)?$/, 'svg']
     ].forEach(([name, test, loader]) => {
         if (loaderOptions[name] !== false) {
