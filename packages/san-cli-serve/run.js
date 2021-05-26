@@ -11,7 +11,7 @@
 // 可以通过传入 api 和 options，获得 yarg 的 handler
 // 方便 command 插件直接调用 run，得到 handler
 // 为了扩展，需要增加 webpack 和 dev-server 的配置回调
-module.exports = function apply(argv, api) {
+module.exports = async function apply(argv, api) {
     const {info, error} = require('san-cli-utils/ttyLogger');
     const mode = argv.mode;
     info(`Starting ${mode} server...`);
@@ -19,8 +19,41 @@ module.exports = function apply(argv, api) {
     const Serve = require('san-cli-webpack/serve');
     const getNormalizeWebpackConfig = require('./getWebpackConfig');
 
+    const runDll = (entry, outputDir, webpackConfig) => (
+        new Promise((resolve, reject) => {
+            const Build = require('san-cli-webpack/build');
+            const {dllOptions: getDllWebpackConfig} = require('san-cli-config-webpack/defaultOptions');
+            const build = new Build(getDllWebpackConfig({
+                entry,
+                outputDir,
+                resolve: webpackConfig.resolve
+            }));
+
+            build.on('success', () => {
+                resolve();
+            });
+            build.on('fail', errObj => {
+                reject(errObj);
+            });
+            build.run();
+        })
+    );
+
     const projectOptions = api.getProjectOptions();
     const webpackConfig = getNormalizeWebpackConfig(api, projectOptions, argv);
+    if (projectOptions.dll) {
+        const outputPath = api.resolve(projectOptions.dll.outputDir);
+        const fs = require('fs-extra');
+        // 手动删除ouput目录，重新构建dll
+        if (!fs.existsSync(`${outputPath}/manifest.json`)) {
+            await runDll(projectOptions.entry || {}, outputPath, webpackConfig);
+        }
+        const DllReferencePlugin = require('webpack/lib/DllReferencePlugin');
+        webpackConfig.plugins.push(new DllReferencePlugin({
+            manifest: require(`${outputPath}/manifest.json`)
+        }));
+    }
+
     const build = new Serve(webpackConfig);
     build.getServer().then(server => {
         ['SIGINT', 'SIGTERM'].forEach(signal => {

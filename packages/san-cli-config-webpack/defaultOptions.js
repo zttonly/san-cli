@@ -96,3 +96,30 @@ exports.lessOptions = {
     },
     sourceMap: false
 };
+
+exports.dllOptions = ({entry, outputDir, resolve}) => {
+    const DllPlugin = require('webpack/lib/DllPlugin');
+    const dllConfig = {
+        entry: {
+            san: ['san'],
+            ...entry
+        },
+        mode: 'production',
+        output: {
+            filename: '[name].dll.[contenthash:8].js',
+            path: outputDir,
+            library: '[name]_dll' // 暴露给外部使用
+            // libraryTarget 指定如何暴露内容，缺省时就是 var
+        },
+        resolve,
+        plugins: [
+            new DllPlugin({
+                context: outputDir,
+                // name和library一致
+                name: '[name]_dll',
+                path: `${outputDir}/manifest.json` // manifest.json的生成路径
+            })
+        ]
+    };
+    return dllConfig;
+};
